@@ -1,0 +1,37 @@
+---
+- name: Mkdir Target Path
+  file:
+    path: "{{ jdk_dest_path }}"
+    state: directory
+    mode: 0755  # 设置目录权限为 755
+
+- name: Use local JDK file 
+  copy:
+    src: "files/{{ jdk_name }}"
+    dest: "/usr/local/src/"
+  when: not IsInternet
+
+- name: Download Internet Package
+  get_url:
+    url: "{{ url_path }}/{{ jdk_name }}"
+    dest: "/usr/local/src/"
+  register: download_result  # 存储下载结果
+  when: IsInternet
+
+- name: Unzip the file
+  unarchive:
+    src: "/usr/local/src/{{ jdk_name }}"
+    dest: "{{ jdk_dest_path }}"
+    remote_src: yes
+    extra_opts: "--strip-components=1"
+
+- name: Set JAVA_HOME
+  lineinfile:
+    path: /etc/profile.d/java.sh
+    create: yes
+    line: "{{ item }}"
+  with_items:
+    - "export JAVA_HOME={{ jdk_dest_path }}"
+    - "export JRE_HOME=$JAVA_HOME/jre"
+    - "export CLASSPATH=.:$JAVA_HOME/lib/dt.jar:$JAVA_HOME/lib/tools.jar:$JRE_HOME/lib:$CLASSPATH"
+    - "export PATH=$JAVA_HOME/bin:$PATH"

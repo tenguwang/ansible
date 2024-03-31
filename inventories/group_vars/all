@@ -1,0 +1,24 @@
+# Connection server user information
+
+
+ansible_ssh_user: 'tenguwang'
+ansible_ssh_port: '10022'
+
+
+# 初始化开启配置 start
+# 密码登陆
+ansible_ssh_pass: 'PassW0rd!@'
+# 提升权限
+ansible_become_pass: 'PassW0rd!@'
+# 初始化开启配置 End
+
+
+# 私钥文件
+ansible_ssh_private_key_file: ./keys/id_rsa
+
+
+# Elevate privileges
+ansible_become: true
+
+# Zabbix_Server
+zabbix_server: '10.10.10.13'

@@ -1,0 +1,14 @@
+---
+- hosts: all
+  remote_user: tenguwang
+  vars:
+    package_name: "promtail.tar.gz"
+    dest_path: "/opt/"
+    src_path: /opt/ansible/roles/promtail/
+
+  tasks:
+  - name: copy package remove
+    copy: src="{{ src_path} }{{ package_name }}" dest="{{ dest_path }}"
+
+  - name: tar package
+    shell: 'tar zxf {{ dest_path }}{{ package_name }} -C {{ dest_path }}'

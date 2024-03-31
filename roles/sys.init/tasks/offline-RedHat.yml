@@ -1,0 +1,12 @@
+- name: 下发离线包
+  unarchive:
+    src: "files/offline_RedHat_{{ ansible_distribution_major_version }}_{{ ansible_architecture }}.tar.gz"
+    dest: "/tmp/offline_RedHat_{{ ansible_distribution_major_version }}_{{ ansible_architecture }}"
+    remote_src: no
+
+- name: 离线安装基础包
+  shell: 'rpm -ivh /tmp/offline_RedHat_{{ ansible_distribution_major_version }}_{{ ansible_architecture }}/*.rpm > /tmp/offline_RedHat_{{ ansible_distribution_major_version }}_{{ ansible_architecture }}/install_package.log 2>&1'
+  register: install_info
+  until: not install_info.failed
+  retries: 3
+  delay: 1

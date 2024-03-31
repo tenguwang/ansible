@@ -1,0 +1,210 @@
+---
+# tasks file for sys.init
+- name: 配置 /etc/hostname
+  copy:
+    content: '{{ inventory_hostname }}'
+    dest: /etc/hostname
+    force: yes
+    mode: 0644
+  notify: 配置主机名
+
+- name: 规范 127.0.0.1 解析
+  lineinfile:
+    path: /etc/hosts
+    regexp: '^(127\.0\.0\.1).*(localhost)'
+    line: '\1\t\2'
+    backrefs: yes
+
+- name: 删除 127.0.1.1 解析
+  lineinfile:
+    path: /etc/hosts
+    state: absent
+    regexp: '127\.0\.1\.1'
+
+- meta: flush_handlers
+
+#- name: 配置 /etc/hosts
+#  template: src=templates/hosts.j2 dest=/etc/hosts
+#  when: host_name is defined
+
+- name: 替换国内 apt 源
+  copy:
+    src: "{{ init_apt_source | default('files/' + ansible_os_family + '_' + ansible_distribution_major_version + '_' + ansible_architecture + '.list') }}"
+    dest: /etc/apt/sources.list
+    force: yes
+  when: ansible_os_family == "Debian"
+
+- name: 更新 apt 源
+  apt:
+    update_cache: yes
+  when: INSTALL_SOURCE == "online" and ansible_os_family == "Debian"
+
+#- include_tasks: "offline-{{ ansible_os_family }}.yml"
+#  when: 'INSTALL_SOURCE == "offline"'
+
+- name: 在线安装基础包
+  package:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - "{{ default_install_packages | unique }}"
+  when: 'INSTALL_SOURCE == "online"'
+
+
+- name: 创建运维用户
+  user:
+    name: "{{ item }}"
+    comment: Topvdn Ops SuperMan
+    shell: /bin/bash
+    state: present
+  with_items:
+    - "{{ init_ops_superman_list | unique }}"
+  tags: ops_user
+
+- name: 下发运维用户公钥
+  authorized_key:
+    user: "{{ item }}"
+    state: present
+    key: "{{ lookup('file', 'files/key_' + item) }}"
+  with_items:
+    - "{{ init_ops_superman_list | unique }}"
+  tags: ops_user
+
+- name: 配置运维用户 sudo 权限
+  template:
+    src: templates/sudoers
+    dest: "/etc/sudoers.d/tfs"
+    validate: /usr/sbin/visudo -cf %s
+  tags: ops_user
+
+# - name: 确认部署密钥对文件存在
+#   stat:
+#     path: "keys/id_rsa.pub"
+#   register: key_file
+#   delegate_to: localhost
+#   tags: ops_user
+
+# - name: 生成部署密钥对文件
+#   user:
+#     name: "{{ ops_deploy_user }}"
+#     generate_ssh_key: yes
+#   when: key_file.stat.exists == False
+#   delegate_to: localhost
+#   tags: ops_user
+
+# - name: 下发部署用户公钥
+#   authorized_key:
+#     user: "{{ ops_deploy_user }}"
+#     key: "{{ lookup('file', '/home/' + ops_deploy_user + '/.ssh/id_rsa.pub') }}"
+#   tags: ops_user
+
+- name: 创建 history 日志文件
+  file:
+    path: /backup/logs/history
+    recurse: yes
+    mode: 0777
+
+- name: 下发 history 脚本
+  copy:
+    src: 'files/define_history'
+    dest: '/etc/define_history'
+    force: yes
+
+- name: 使 history 脚本生效
+  lineinfile:
+    path: '/etc/profile'
+    regexp: '/etc/define_history'
+    line: 'source /etc/define_history'
+
+# - name: 下发 http 代理配置
+#   lineinfile:
+#     path: '/etc/profile'
+#     regexp: 'export http_proxy={{ http_proxy_url }}'
+#     line: 'export http_proxy={{ http_proxy_url }}'
+#   when: http_proxy_url is defined
+#   tags: proxy_conf
+
+# - name: 下发 https 代理配置
+#   lineinfile:
+#     path: '/etc/profile'
+#     regexp: 'export https_proxy={{ https_proxy_url }}'
+#     line: 'export https_proxy={{ https_proxy_url }}'
+#   when: https_proxy_url is defined
+#   tags: proxy_conf
+
+- name: 配置 sysctl.conf
+  copy:
+    src: 'files/sysctl.conf'
+    dest: '/etc/sysctl.conf'
+    force: yes
+  notify: 修改运行时内核参数
+  tags: sysctl_conf
+
+- name: 配置系统语言 - Debian
+  copy:
+    src: 'files/locale'
+    dest: '/etc/default/locale'
+  when: ansible_os_family == "Debian"
+
+- name: 配置系统语言 - RedHat
+  copy:
+    src: 'file/locale.conf'
+    dest: '/etc/locale.conf'
+  when: ansible_os_family == "RedHat"
+
+- name: 配置系统时区
+  copy:
+    src: '/usr/share/zoneinfo/Asia/Shanghai'
+    dest: '/etc/localtime'
+    remote_src: yes
+    force: yes
+
+- name: 设置终端 session 超时时间
+  lineinfile:
+    path: '/etc/profile'
+    regexp: 'TMOUT'
+    line: 'TMOUT=300'
+
+- name: 修改 /etc/systemd/system.conf (DefaultTasksMax)
+  lineinfile:
+    path: '/etc/systemd/system.conf'
+    regexp: 'DefaultTasksMax'
+    line: 'DefaultTasksMax=200000'
+  notify: systemctl daemon-reexec
+  tags: system_conf
+
+- name: 修改 /etc/systemd/system.conf (DefaultLimitNOFILE)
+  lineinfile:
+    path: '/etc/systemd/system.conf'
+    regexp: 'DefaultLimitNOFILE'
+    line: 'DefaultLimitNOFILE=10000000'
+  notify: systemctl daemon-reload
+  tags: system_conf
+
+- include_tasks: "rc-local.yml"
+  when: ansible_os_family == "Debian" and (ansible_distribution_major_version == "18" or ansible_distribution_major_version == "20")
+
+- name: 配置 sshd_config
+  copy:
+    src: 'files/{{ ansible_distribution_major_version }}_sshd_config'
+    dest: '/etc/ssh/sshd_config'
+    force: yes
+  notify: 重启 sshd 服务
+  when: (ansible_os_family == "Debian" or ansible_os_family == "RedHat") and (ansible_distribution_major_version == "7" or ansible_distribution_major_version == "16" or  ansible_distribution_major_version == "18" or ansible_distribution_major_version == "20" or ansible_distribution_major_version == "22")
+  tags: sshd_config
+  
+- name: 禁用 swap分区
+  lineinfile:
+    path: '/etc/fstab'
+    regexp: '/swap.img'
+    line: ' '
+  notify: 禁用 swap分区
+  tags: swap
+
+- name: 设置本机所属的时区为上海
+  lineinfile:
+    path: '/etc/timezone'
+    regexp: 'Asia/Shanghai'
+    line: 'Asia/Shanghai'
+  notify: 设置本机所属的时区为上海
+  tags: timezone

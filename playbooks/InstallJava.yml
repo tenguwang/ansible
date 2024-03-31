@@ -1,0 +1,10 @@
+---
+- name: Install Java
+  hosts: all
+  remote_user: tenguwang
+  become: yes
+
+  tasks:
+    - name: Install Java
+      include_role:
+        name: java

@@ -1,0 +1,63 @@
+---
+- hosts: all
+  remote_user: tenguwang
+  vars:
+    zabbix_deb_url: "https://repo.zabbix.com/zabbix/6.0/ubuntu/pool/main/z/zabbix-release/zabbix-release_6.0-4%2Bubuntu20.04_all.deb"
+    zabbix_deb_package: "zabbix-release_6.0-4%2Bubuntu20.04_all.deb"
+    local_ip: "{{ ansible_default_ipv4['address'] }}"
+    hostname: "{{ inventory_hostname }}"
+  tasks:
+  - name: 下载源程序
+    get_url: 
+      url: "{{ zabbix_deb_url }}"
+      dest: /home/tenguwang
+      force: yes
+
+  - name: 安装Zabbix源
+    shell: 'dpkg -i /home/tenguwang/{{ zabbix_deb_package }}'
+
+  - name: 更新apt源
+    shell: 'apt update'
+
+  - name: 安装Zabbix-agent服务
+    apt: 
+      name: zabbix-agent
+      state: present
+
+  - name: edit config Server
+    lineinfile:
+      path: /etc/zabbix/zabbix_agentd.conf
+      regexp: "Server=127.0.0.1"
+      line: "Server={{ zabbix_server }}"
+
+  - name: edit config ServerActive
+    lineinfile:
+      path: /etc/zabbix/zabbix_agentd.conf
+      regexp: "ServerActive=127.0.0.1"
+      line: "ServerActive={{ zabbix_server }}"
+
+  - name: edit defule Hostname
+    lineinfile:
+      path: /etc/zabbix/zabbix_agentd.conf
+      regexp: "Hostname=Zabbix server"
+      state: absent
+
+  - name: add system hostname info
+    lineinfile:
+      path: /etc/zabbix/zabbix_agentd.conf
+      insertafter: "# Hostname="
+      line: "{{ item }}"
+    with_items:
+      - "HostnameItem=system.hostname"
+      - "HostMetadataItem=system.uname"
+
+  - name:
+    lineinfile:
+      path: /etc/zabbix/zabbix_agentd.conf
+      regexp: "# Hostname="
+      line: "Hostname={{ hostname }}"
+
+  - name: restart zabbix-agent
+    service: 
+      name: zabbix-agent
+      state: restarted

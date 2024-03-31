@@ -1,0 +1,31 @@
+[ops]
+ops1    	ansible_host=10.10.10.10
+ops2    	ansible_host=10.10.10.11
+devops          ansible_host=10.10.10.13
+
+[pg]
+pg1             ansible_host=10.10.10.20
+pg2             ansible_host=10.10.10.29
+
+[middleware]
+middleware1     ansible_host=10.10.10.21
+middleware2     ansible_host=10.10.10.22
+middleware3     ansible_host=10.10.10.23
+
+[app]
+application1    ansible_host=10.10.10.31 
+application2    ansible_host=10.10.10.32 
+application3    ansible_host=10.10.10.33
+
+[sto]
+Stockpile	ansible_host=10.10.10.12
+
+[databases]
+DataServer1	ansible_host=10.10.10.100	# ansible_ssh_port=22
+DataServer2	ansible_host=10.10.10.101	# ansible_ssh_port=22
+DataServer3	ansible_host=10.10.10.102	# ansible_ssh_port=22
+
+
+[pre]
+application	ansible_host=10.10.10.88	# ansible_ssh_port=22
+

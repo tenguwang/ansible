@@ -1,0 +1,106 @@
+#!/bin/bash
+#
+# TenguWang<13620606694@163.com>
+set -o errexit
+
+# default version, can be overridden by cmd line options
+export DOCKER_VER=18.09.8
+export DOWNLOAD_URL=programme.tenguwang.com
+
+function install_docker() { 
+  # check if a container runtime is already installed
+  systemctl status docker|grep Active|grep -q running && { echo "[WARN] docker is already running."; return 0; }
+  systemctl status containerd|grep Active|grep -q running && { echo "[ERROR] containerd is running, unsupported."; exit 1; }
+  # docker source
+  DOCKER_URL="http://programme.tenguwang.com/docker/docker-${DOCKER_VER}.tgz"
+
+  mkdir -p /opt/bin
+
+  if [[ -f "/usr/local/src/docker-${DOCKER_VER}.tgz" ]];then
+    echo "[INFO] docker binaries already existed"
+  else
+    echo -e "[INFO] \033[33mdownloading docker binaries\033[0m $DOCKER_VER"
+    if [[ -e /usr/bin/curl ]];then
+      curl -C- -O --retry 3 "$DOCKER_URL" || { echo "[ERROR] downloading docker failed"; exit 1; }
+    else
+      wget -c "$DOCKER_URL" || { echo "[ERROR] downloading docker failed"; exit 1; }
+    fi
+    mv ./docker-${DOCKER_VER}.tgz /usr/local/src/
+  fi
+
+  tar zxf /usr/local/src/docker-${DOCKER_VER}.tgz -C /usr/local/src/ && \
+  mv /usr/local/src/docker/* /opt/bin && \
+  ln -sf /opt/bin/docker /bin/docker
+
+  echo "[INFO] generate docker service file"
+  cat > /etc/systemd/system/docker.service << EOF
+[Unit]
+Description=Docker Application Container Engine
+Documentation=http://docs.docker.io
+[Service]
+Environment="PATH=/opt/bin:/bin:/sbin:/usr/bin:/usr/sbin"
+ExecStart=/opt/bin/dockerd
+ExecStartPost=/sbin/iptables -I FORWARD -s 0.0.0.0/0 -j ACCEPT
+ExecReload=/bin/kill -s HUP \$MAINPID
+Restart=on-failure
+RestartSec=5
+LimitNOFILE=infinity
+LimitNPROC=infinity
+LimitCORE=infinity
+Delegate=yes
+KillMode=process
+[Install]
+WantedBy=multi-user.target
+EOF
+
+  # configuration for dockerd
+  echo "[INFO] generate docker config file"
+  if [[ "$REGISTRY_MIRROR" == CN ]];then
+    echo "[INFO] prepare register mirror for $REGISTRY_MIRROR"
+    cat > /etc/docker/daemon.json << EOF
+{
+  "registry-mirrors": [
+    "https://dockerhub.azk8s.cn",
+    "https://docker.mirrors.ustc.edu.cn",
+    "http://hub-mirror.c.163.com"
+  ],
+  "max-concurrent-downloads": 10,
+  "log-driver": "json-file",
+  "log-level": "warn",
+  "log-opts": {
+    "max-size": "10m",
+    "max-file": "3"
+    },
+  "data-root": "/var/lib/docker"
+}
+EOF
+  else
+    echo "[INFO] standard config without registry mirrors"
+    cat > /etc/docker/daemon.json << EOF
+{
+  "max-concurrent-downloads": 10,
+  "log-driver": "json-file",
+  "log-level": "warn",
+  "log-opts": {
+    "max-size": "10m",
+    "max-file": "3"
+    },
+  "data-root": "/var/lib/docker"
+}
+EOF
+  fi
+
+  if [[ -e /etc/centos-release || -e /etc/redhat-release ]]; then
+  # 关闭selinux
+    echo "[INFO] turn off selinux in CentOS/Redhat"
+    setenforce 0
+    echo "SELINUX=disabled" > /etc/selinux/config
+  fi
+
+  echo "[INFO] enable and start docker"
+  systemctl enable docker
+  systemctl daemon-reload && systemctl restart docker && sleep 8
+}
+
+
+install_docker

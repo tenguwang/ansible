@@ -1,0 +1,38 @@
+---
+INSTALL_SOURCE: online
+
+# init_apt_source:
+
+# 运维用户
+init_ops_superman_list:
+  - tenguwang
+
+ops_deploy_user: 
+
+# 默认安装包
+default_install_packages:
+  - lrzsz
+  - net-tools
+  - lsof
+  - unzip
+  - wget
+  - ntpdate
+  - iotop
+  - iftop
+  - htop
+  - ifstat
+  - nload
+  - iperf
+  - xfsprogs
+  - nmap
+  - smartmontools
+  - sysbench
+  - dnsutils
+  - bc
+  - libcurl4-openssl-dev
+  - libgd-dev
+  - sysstat
+  - telnet
+  - ifupdown
+  - wget
+

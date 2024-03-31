@@ -1,0 +1,3 @@
+{% for u in (init_ops_superman_list | unique) %}
+{{ u }}	ALL=(root)	NOPASSWD:ALL
+{% endfor %}

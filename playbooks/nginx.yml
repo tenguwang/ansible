@@ -1,0 +1,21 @@
+---
+- hosts: all
+  remote_user: tenguwang
+  become: yes
+
+  tasks:
+    - name: install nginx_signing.key file
+      apt_key: 
+        url: "http://nginx.org/keys/nginx_signing.key"
+        state: present
+
+    - name: install nginx
+      apt:
+        name: nginx
+        state: present
+
+    - name: enable nginx
+      service:
+        name: nginx
+        enabled: yes
+        state: started

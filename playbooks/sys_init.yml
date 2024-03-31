@@ -1,0 +1,38 @@
+---
+- hosts: all:!elasticsearch
+  roles:
+    - role: sys.init
+    - role: robertdebock.ulimit
+      ulimit_items:
+        - limit_item: nofile
+          domain: root
+          limit_type: soft
+          value: 100001
+        - limit_item: nofile
+          domain: root
+          limit_type: hard
+          value: 100001
+        - limit_item: nofile
+          domain: '*'
+          limit_type: soft
+          value: 100001
+        - limit_item: nofile
+          domain: '*'
+          limit_type: hard
+          value: 100001
+        - limit_item: nproc
+          domain: root
+          limit_type: soft
+          value: 65535
+        - limit_item: nproc
+          domain: root
+          limit_type: hard
+          value: 65535
+        - limit_item: nproc
+          domain: '*'
+          limit_type: soft
+          value: 65535
+        - limit_item: nproc
+          domain: '*'
+          limit_type: hard
+          value: 65535

@@ -1,0 +1,16 @@
+- name: 配置 rc-local 服务
+  copy:
+    src: 'files/rc-local.service'
+    dest: '/lib/systemd/system/rc-local.service'
+    force: yes
+
+- name: 添加 rc.local 文件
+  lineinfile:
+    path: '/etc/rc.local'
+    line: "#!/bin/sh -e"
+    create: yes
+    mode: 0755
+  notify: 重启 rc.local 服务
+
+- name: 启用 rc.local 服务
+  service: name=rc-local state=started enabled=yes
