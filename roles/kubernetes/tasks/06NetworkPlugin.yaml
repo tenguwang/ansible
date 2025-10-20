@@ -1,0 +1,30 @@
+---
+
+- name: Copy tigera-operator.yaml to control node
+  copy:
+    src: files/tigera-operator.yaml
+    dest: /usr/local/src/tigera-operator.yaml
+
+- name: Apply tigera-operator.yaml
+  command: kubectl create -f /usr/local/src/tigera-operator.yaml
+  register: tigera_operator_result
+  failed_when: tigera_operator_result.rc != 0 and "AlreadyExists" not in tigera_operator_result.stderr
+  changed_when: "'created' in tigera_operator_result.stdout"
+
+- name: Wait for Installation CRD to be available
+  command: kubectl get crd installations.operator.tigera.io
+  register: crd_check
+  retries: 15
+  delay: 4
+  until: crd_check.rc == 0
+
+- name: Generate custom-resources.yaml from template
+  template:
+    src: templates/custom-resources.yaml.j2
+    dest: /usr/local/src/custom-resources.yaml
+
+- name: Apply custom-resources.yaml
+  command: kubectl create -f /usr/local/src/custom-resources.yaml
+  register: custom_resources_result
+  failed_when: custom_resources_result.rc != 0 and "AlreadyExists" not in custom_resources_result.stderr
+  changed_when: "'created' in custom_resources_result.stdout"

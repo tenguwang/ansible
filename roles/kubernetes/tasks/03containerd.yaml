@@ -1,0 +1,68 @@
+---
+- name: Download containerd v1.7.26 tarball
+  ansible.builtin.get_url:
+    url: '{{ containerd_url }}/{{ containederd_file }}'
+    dest: /tmp/{{ containederd_file }}
+    mode: '0644'
+
+- name: Extract containerd tarball to /
+  ansible.builtin.unarchive:
+    src: /tmp/{{ containederd_file }}
+    dest: /
+    remote_src: yes
+
+- name: Ensure /etc/containerd directory exists
+  ansible.builtin.file:
+    path: /etc/containerd
+    state: directory
+    mode: '0755'
+
+- name: Generate default containerd config file
+  ansible.builtin.command: containerd config default
+  register: containerd_default_config
+  changed_when: false
+
+- name: Write containerd config to /etc/containerd/config.toml
+  ansible.builtin.copy:
+    dest: /etc/containerd/config.toml
+    content: "{{ containerd_default_config.stdout }}"
+    mode: '0644'
+
+- name: Configure containerd registry mirrors
+  ansible.builtin.blockinfile:
+    path: /etc/containerd/config.toml
+    marker: "# {mark} ANSIBLE MANAGED BLOCK: REGISTRY MIRRORS"
+    insertafter: '\[plugins."io.containerd.grpc.v1.cri".registry\]'
+    block: |
+      [plugins."io.containerd.grpc.v1.cri".registry.mirrors."docker.io"]
+        endpoint = ["https://docker.1ms.run"]
+      [plugins."io.containerd.grpc.v1.cri".registry.mirrors."k8s.gcr.io"]
+        endpoint = ["https://k8s.1ms.run"]
+      [plugins."io.containerd.grpc.v1.cri".registry.mirrors."gcr.io"]
+        endpoint = ["https://gcr.1ms.run"]
+      [plugins."io.containerd.grpc.v1.cri".registry.mirrors."ghcr.io"]
+        endpoint = ["https://ghcr.1ms.run"]
+
+- name: Ensure containerd service is enabled and started
+  ansible.builtin.systemd:
+    name: containerd
+    state: started
+    enabled: true
+
+- name: Modify sandbox_image from config.toml
+  ansible.builtin.replace:
+    path: /etc/containerd/config.toml
+    regexp: 'sandbox_image = "registry.k8s.io/pause:3.8"'
+    replace: 'sandbox_image = "{{ sandbox_image }}"'
+
+
+
+- name: Modify SystemdCgroup from false to true in config.toml
+  ansible.builtin.replace:
+    path: /etc/containerd/config.toml
+    regexp: 'SystemdCgroup = false'
+    replace: 'SystemdCgroup = true'
+
+- name: Reload systemd manager configuration
+  ansible.builtin.command: systemctl daemon-reload
+  notify: Restart containerd

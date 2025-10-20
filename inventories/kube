@@ -1,0 +1,9 @@
+kube-master1        ansible_host=10.10.10.1 
+kube-master2        ansible_host=10.10.10.2 
+kube-master3        ansible_host=10.10.10.3 
+kube-node1          ansible_host=10.10.10.4 
+kube-node2          ansible_host=10.10.10.5 
+kube-node3          ansible_host=10.10.10.6 
+kube-node4          ansible_host=10.10.10.7 
+kube-node5          ansible_host=10.10.10.8 
+kube-operation      ansible_host=10.10.10.11

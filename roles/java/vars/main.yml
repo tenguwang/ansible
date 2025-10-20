@@ -3,4 +3,4 @@ jdk_name: jdk-8u202-linux-x64.tar.gz
 jdk_folder: jdk1.8.0_202
 jdk_dest_path: /opt/java
 
-IsInternet: False
+IsInternet: true

@@ -1,0 +1,37 @@
+#SPDX-License-Identifier: MIT-0
+---
+# vars file for kubernetes
+default_install_packages:
+  - lrzsz
+  - net-tools
+  - lsof
+  - unzip
+  - wget
+  - iotop
+  - iftop
+  - htop
+  - ifstat
+  - wget
+  - tree
+  - apt-transport-https
+  - ca-certificates
+  - curl
+  - gpg
+
+
+# contained 
+containerd_version: "1.7.26"
+containerd_url: "http://file.tenguwang.com/containerd"
+containederd_file: "cri-containerd-{{ containerd_version }}-linux-amd64.tar.gz"
+sandbox_image: "registry.cn-beijing.aliyuncs.com/jerrywang/pause:3.8"
+
+
+
+kube_master:
+  ip: "10.10.8.18"
+  hostname: "kube-master"
+  kubernetes_version: "1.33.1"
+  registry: "registry.cn-beijing.aliyuncs.com/jerrywang"
+  podSubnet: "10.244.0.0/16"
+  join_command_script: "/usr/local/bin/join-cluster.sh"
+  kubelet_config: "/usr/local/src/kubeadm.yaml"

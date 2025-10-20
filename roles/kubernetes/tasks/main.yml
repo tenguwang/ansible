@@ -1,0 +1,27 @@
+#SPDX-License-Identifier: MIT-0
+---
+# tasks file for kubernetes
+
+- name: Step 1 - Init tasks
+  ansible.builtin.import_tasks: 01init.yaml
+  tags: step1
+
+- name: Step 2 - Configuration tasks
+  ansible.builtin.import_tasks: 02config.yaml
+  tags: step2
+
+- name: Step 3 - Install and configure containerd
+  ansible.builtin.import_tasks: 03containerd.yaml
+  tags: step3
+
+- name: Step 4 - Install kubeadm and kubectl
+  ansible.builtin.import_tasks: 04kubelet.yaml
+  tags: step4
+
+- name: Step 5 - init CLUSTER
+  ansible.builtin.import_tasks: 05initCluster.yaml
+  tags: step5
+
+- name: Step 6 - Install Network Plugin
+  ansible.builtin.import_tasks: 06NetworkPlugin.yaml
+  tags: step6

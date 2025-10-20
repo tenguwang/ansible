@@ -1,0 +1,13 @@
+## 默认禁用源码镜像以提高速度，如需启用请自行取消注释
+deb http://mirrors.huaweicloud.com/ubuntu/ jammy main restricted universe multiverse
+# deb-src http://mirrors.huaweicloud.com/ubuntu/ jammy main restricted universe multiverse
+deb http://mirrors.huaweicloud.com/ubuntu/ jammy-updates main restricted universe multiverse
+# deb-src http://mirrors.huaweicloud.com/ubuntu/ jammy-updates main restricted universe multiverse
+deb http://mirrors.huaweicloud.com/ubuntu/ jammy-backports main restricted universe multiverse
+# deb-src http://mirrors.huaweicloud.com/ubuntu/ jammy-backports main restricted universe multiverse
+## 预发布软件源（不建议启用）
+# deb http://mirrors.huaweicloud.com/ubuntu/ jammy-proposed main restricted universe multiverse
+# # deb-src http://mirrors.huaweicloud.com/ubuntu/ jammy-proposed main restricted universe multiverse
+## 安全更新软件源
+deb http://mirrors.huaweicloud.com/ubuntu/ jammy-security main restricted universe multiverse
+# deb-src http://mirrors.huaweicloud.com/ubuntu/ jammy-security main restricted universe multiverse

@@ -1,0 +1,8 @@
+---
+- name: Install kubernetes
+  hosts: all
+  remote_user: tenguwang
+  become: yes
+
+  roles:
+    - kubernetes

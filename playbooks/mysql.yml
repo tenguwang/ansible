@@ -1,0 +1,8 @@
+---
+- name: Install MySql
+  hosts: all
+  remote_user: tenguwang
+  become: yes
+  
+  roles: 
+    - mysql

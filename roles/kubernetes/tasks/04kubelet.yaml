@@ -1,0 +1,61 @@
+---
+# 安装 kubelet相关
+
+- name: 创建 /etc/apt/keyrings 目录
+  file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: '0755'
+
+- name: 下载 Kubernetes GPG 密钥
+  ansible.builtin.get_url:
+    url: https://pkgs.k8s.io/core:/stable:/v1.31/deb/Release.key
+    dest: /etc/apt/keyrings/kubernetes-release-key
+    mode: '0644'
+
+- name: 转换 GPG 密钥为 .gpg 格式
+  ansible.builtin.command:
+    cmd: gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg /etc/apt/keyrings/kubernetes-release-key
+  args:
+    creates: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+
+- name: 添加 Kubernetes APT 仓库
+  ansible.builtin.copy:
+    dest: /etc/apt/sources.list.d/kubernetes.list
+    content: |
+      deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.31/deb/ /
+    mode: '0644'
+  notify: apt update_cache
+
+# 强制立即执行 notify 中的 apt update_cache
+- meta: flush_handlers
+
+- name: 安装 kubelet kubeadm kubectl
+  ansible.builtin.package:
+    name:
+      - kubelet
+      - kubeadm
+      - kubectl
+    state: present
+
+- name: 锁定 kubelet kubeadm kubectl 版本
+  ansible.builtin.command:
+    cmd: apt-mark hold kubelet kubeadm kubectl
+
+- name: kubelets使用systemd cgroupdriver
+  ansible.builtin.replace:
+    path: /etc/default/kubelet
+    regexp: 'KUBELET_EXTRA_ARGS='
+    replace: 'KUBELET_EXTRA_ARGS="--cgroup-driver=systemd"'
+
+
+- name: 确保 kubelet 服务已重新加载
+  ansible.builtin.command: systemctl daemon-reload
+
+
+- name: Enable kubectl bash completion
+  ansible.builtin.shell: |
+    kubectl completion bash | tee /etc/bash_completion.d/kubectl > /dev/null
+    chmod a+r /etc/bash_completion.d/kubectl
+  args:
+    executable: /bin/bash

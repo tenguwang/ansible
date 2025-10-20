@@ -1,0 +1,82 @@
+---
+
+# 主机名 开始
+- name: Set HostName
+  ansible.builtin.hostname:
+    name: "{{ inventory_hostname }}"
+
+
+- name: Update /etc/hosts with inventory_hostname
+  ansible.builtin.lineinfile:
+    path: /etc/hosts
+    regexp: '^127\.0\.1\.1\s+'
+    line: "127.0.1.1 {{ inventory_hostname }}"
+    state: present
+
+
+- name: Generate dynamic host mappings
+  ansible.builtin.blockinfile:
+    path: /etc/hosts
+    marker: "# {mark} ANSIBLE MANAGED CLUSTER HOSTS"
+    block: |
+      {% for host in groups['all'] %}
+      {{ hostvars[host]['ansible_host'] | default(hostvars[host]['inventory_hostname']) }} {{ host }}
+      {% endfor %}
+# 主机名 结束
+
+# 修改时区
+- name: Set timezone to Asia/Shanghai
+  ansible.builtin.command: timedatectl set-timezone Asia/Shanghai
+
+- name: 替换国内 apt 源
+  copy:
+    src: "{{ init_apt_source | default('files/' + ansible_os_family + '_' + ansible_distribution_major_version + '_' + ansible_architecture + '.list') }}"
+    dest: /etc/apt/sources.list
+    force: yes
+  when: ansible_os_family == "Debian"
+  notify: apt update_cache
+
+# 强制立即执行 notify 中的 apt update_cache
+- meta: flush_handlers
+
+# 安装基础软件
+- name: Install default packages
+  ansible.builtin.package:
+    name: "{{ default_install_packages }}"
+    state: present
+
+# 时间同步 开始
+- name: Install chrony
+  ansible.builtin.package:
+    name: chrony
+    state: present
+
+- name: enable chronyd service
+  ansible.builtin.service:
+    name: chronyd
+    state: started
+    enabled: true
+
+- name: Configure chrony with default NTP servers (optional)
+  ansible.builtin.blockinfile:
+    path: /etc/chrony/chrony.conf
+    marker: "# {mark} ANSIBLE MANAGED NTP SERVERS"
+    block: |
+      server ntp.aliyun.com iburst
+      server ntp.tencent.com iburst
+      server ntp1.aliyun.com iburst
+  notify: Restart chrony
+# 时间同步 结束
+
+# 配置DNS
+- name: Remove existing /etc/resolv.conf file
+  file:
+    path: /etc/resolv.conf
+    state: absent
+
+- name: Create a symbolic link for resolv.conf
+  file:
+    src: /run/systemd/resolve/resolv.conf
+    dest: /etc/resolv.conf
+    state: link
+# 配置DNS 结束

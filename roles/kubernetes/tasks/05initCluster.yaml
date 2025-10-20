@@ -1,0 +1,48 @@
+---
+- name: Generate kubeadm configuration file
+  template:
+    src: templates/kubeadm.yaml.j2
+    dest: "{{ kube_master.kubelet_config }}"
+    mode: '0644'
+
+- name: Initialize Kubernetes cluster
+  command: >
+    kubeadm init
+    --config {{ kube_master.kubelet_config }}
+    --upload-certs
+    --v=9
+  args:
+    creates: /etc/kubernetes/admin.conf
+  register: kubeadm_init_result
+  ignore_errors: false
+
+- name: Check if kubeadm init was successful
+  assert:
+    that:
+      - kubeadm_init_result.rc == 0
+    fail_msg: "Kubeadm init failed with error: {{ kubeadm_init_result.stderr }}"
+
+- name: Set up kubeconfig for the current user
+  shell: |
+    mkdir -p /root/.kube/
+    cp -f /etc/kubernetes/admin.conf /root/.kube/config
+    chown root:root /root/.kube/config
+  args:
+    creates: "/root/.kube/config"
+  register: kubeconfig_user_setup_result
+  ignore_errors: false
+
+- name: Check if user kubeconfig setup was successful
+  assert:
+    that:
+      - kubeconfig_user_setup_result.rc == 0
+    fail_msg: "User kubeconfig setup failed with error: {{ kubeconfig_user_setup_result.stderr }}"
+
+- name: Generate kubeadm join command
+  command: kubeadm token create --print-join-command
+  register: kubeadm_join_command_result
+  changed_when: false
+
+- name: Show kubeadm join command
+  debug:
+    msg: "{{ kubeadm_join_command_result.stdout }}"
