@@ -182,7 +182,7 @@
   tags: system_conf
 
 - include_tasks: "rc-local.yml"
-  when: ansible_os_family == "Debian" and (ansible_distribution_major_version == "18" or ansible_distribution_major_version == "20")
+  when: ansible_os_family == "Debian" and (ansible_distribution_major_version in ["18", "20", "22", "24"])
 
 - name: 配置 sshd_config
   copy:
@@ -190,7 +190,7 @@
     dest: '/etc/ssh/sshd_config'
     force: yes
   notify: 重启 sshd 服务
-  when: (ansible_os_family == "Debian" or ansible_os_family == "RedHat") and (ansible_distribution_major_version == "7" or ansible_distribution_major_version == "16" or  ansible_distribution_major_version == "18" or ansible_distribution_major_version == "20" or ansible_distribution_major_version == "22")
+  when: (ansible_os_family == "Debian" or ansible_os_family == "RedHat") and (ansible_distribution_major_version in ["7", "16", "18", "20", "22", "24"])
   tags: sshd_config
   
 - name: 禁用 swap分区

@@ -1,0 +1,74 @@
+# ==============================
+#  OpenSSH Server Configuration
+#  For Ubuntu 24.04 LTS (secure & optimized)
+# ==============================
+
+# --- 基本设置 ---
+Include /etc/ssh/sshd_config.d/*.conf
+
+Port 10022
+AddressFamily inet
+ListenAddress 0.0.0.0
+
+Protocol 2
+PermitRootLogin no
+MaxAuthTries 3
+MaxSessions 5
+LoginGraceTime 30s
+StrictModes yes
+
+# --- 身份验证 ---
+PubkeyAuthentication yes
+PasswordAuthentication no
+PermitEmptyPasswords no
+KbdInteractiveAuthentication no
+UsePAM yes
+
+# --- 主机密钥 (默认即可) ---
+HostKey /etc/ssh/ssh_host_ed25519_key
+HostKey /etc/ssh/ssh_host_rsa_key
+
+# --- 加密算法 (现代安全推荐) ---
+KexAlgorithms curve25519-sha256,curve25519-sha256@libssh.org
+Ciphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com,aes256-ctr
+MACs hmac-sha2-512-etm@openssh.com,hmac-sha2-256-etm@openssh.com
+
+# --- 日志 ---
+SyslogFacility AUTH
+LogLevel VERBOSE
+
+# --- 客户端保持连接 ---
+TCPKeepAlive yes
+ClientAliveInterval 60
+ClientAliveCountMax 3
+
+# --- X11 转发 (如果不用建议关掉) ---
+X11Forwarding no
+#X11DisplayOffset 10
+
+# --- 禁止 agent 转发与隧道 ---
+AllowAgentForwarding no
+AllowTcpForwarding no
+PermitTunnel no
+GatewayPorts no
+
+# --- SFTP 子系统 ---
+Subsystem sftp /usr/lib/openssh/sftp-server
+
+# --- 环境变量 ---
+AcceptEnv LANG LC_*
+
+# --- MOTD 与 Banner ---
+PrintMotd no
+PrintLastLog yes
+#Banner /etc/issue.net
+
+# --- 限制登录来源（示例，可选） ---
+#Match Address 192.168.0.0/16
+#    PasswordAuthentication yes
+
+# --- 防止暴力破解延迟 ---
+MaxStartups 10:30:60
+
+# --- 版本号隐藏 ---
+VersionAddendum none

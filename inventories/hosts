@@ -4,6 +4,6 @@
 
 
 # HeBang-VPP ansible_host=139.224.200.252 ansible_ssh_port=10022
-hebang-sto ansible_host=10.10.10.199 ansible_ssh_port=10022
+hebang-sto ansible_host=10.10.10.42 ansible_ssh_port=10022
 
 

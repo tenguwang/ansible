@@ -48,10 +48,10 @@ node1 ansible_host=172.16.140.131
 ```shell
 cat inventories/group_vars/all 
 # Connection server user information
-ansible_ssh_user: 'megaium'
+ansible_ssh_user: 'tenguwang'
 ansible_ssh_port: '22'
-ansible_ssh_pass: 'Megaium!'
-ansible_become_pass: 'Megaium!'
+ansible_ssh_pass: 'PassWord'
+ansible_become_pass: 'PassWord'
 # ansible_ssh_private_key_file: keys/id.rsa
 
 # Elevate privileges
